@@ -8,20 +8,20 @@ This is a standard stdio-transport MCP server — it's not specific to any one L
 
 ## Prerequisites
 
-- OpenSpace running locally with its TCP control interface enabled. This is on by default in `openspace.cfg`:
+  - OpenSpace running locally with its TCP control interface enabled. This is on by default in `openspace.cfg`:
 
-  ```lua
-  Server = {
-    Interfaces = {
-      { Type = "TcpSocket", Port = 4681, Enabled = true, DefaultAccess = "Deny",
-        AllowAddresses = { "127.0.0.1", "localhost" }, Password = "" },
-      ...
+    ```lua
+    Server = {
+      Interfaces = {
+        { Type = "TcpSocket", Port = 4681, Enabled = true, DefaultAccess = "Deny",
+          AllowAddresses = { "127.0.0.1", "localhost" }, Password = "" },
+        ...
+      }
     }
-  }
-  ```
+    ```
 
-  Connections from `127.0.0.1`/`localhost` are authorized without a password by default. If you've changed
-  the port, password, or `AllowAddresses`, set the matching environment variables below.
+    Connections from `127.0.0.1`/`localhost` are authorized without a password by default. If you've changed
+    the port, password, or `AllowAddresses`, set the matching environment variables below.
 
 ## Install & build
 
@@ -34,12 +34,12 @@ npm run build
 
 All configuration is via environment variables (all optional):
 
-| Variable                       | Default     | Description                                  |
-| ------------------------------- | ----------- | --------------------------------------------- |
-| `OPENSPACE_HOST`                | `127.0.0.1` | Host OpenSpace's TCP interface is bound to.  |
-| `OPENSPACE_PORT`                | `4681`      | Port of OpenSpace's TCP interface.           |
-| `OPENSPACE_PASSWORD`            | `""`        | Password, if the interface requires one.     |
-| `OPENSPACE_CONNECT_TIMEOUT_MS`  | `15000`     | How long to wait for OpenSpace to accept a connection before a tool call fails. OpenSpace's control server responds on its render loop cadence, so this needs headroom beyond a typical socket timeout, especially while OpenSpace is still loading a scene. |
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OPENSPACE_HOST` | `127.0.0.1` | Host OpenSpace's TCP interface is bound to. |
+| `OPENSPACE_PORT` | `4681` | Port of OpenSpace's TCP interface. |
+| `OPENSPACE_PASSWORD` | `""` | Password, if the interface requires one. |
+| `OPENSPACE_CONNECT_TIMEOUT_MS` | `15000` | How long to wait for OpenSpace to accept a connection before a tool call fails. OpenSpace's control server responds on its render loop cadence, so this needs headroom beyond a typical socket timeout, especially while OpenSpace is still loading a scene. |
 
 The server connects lazily on the first tool call (so it can start before OpenSpace does) and reconnects automatically if the connection drops.
 
@@ -108,9 +108,9 @@ If a request doesn't do anything, see [Known limitation](#known-limitation-lua-e
 
 **Generic (escape hatch):**
 
-- `run_lua_script` — execute an arbitrary Lua script string.
-- `call_lua_function` — call one named `openspace.*` Lua function with JSON arguments.
-- `describe_lua_api` — list (optionally filtered) the live Lua API of the connected OpenSpace instance, including argument lists and help text. Use this to discover function names before calling them.
+  - `run_lua_script` — execute an arbitrary Lua script string.
+  - `call_lua_function` — call one named `openspace.*` Lua function with JSON arguments.
+  - `describe_lua_api` — list (optionally filtered) the live Lua API of the connected OpenSpace instance, including argument lists and help text. Use this to discover function names before calling them.
 
 **Navigation:** `navigate_fly_to`, `navigate_fly_to_geo`, `navigate_jump_to`, `navigate_set_focus`,
 `navigate_zoom_to_focus`, `navigate_retarget`

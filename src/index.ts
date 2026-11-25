@@ -1,17 +1,17 @@
 #!/usr/bin/env node
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
-import { registerGenericTools } from "./tools/generic.js";
-import { registerMiscTools } from "./tools/misc.js";
-import { registerNavigationTools } from "./tools/navigation.js";
-import { registerPropertyTools } from "./tools/properties.js";
-import { registerSceneTools } from "./tools/scene.js";
-import { registerTimeTools } from "./tools/time.js";
+import { registerGenericTools } from './tools/generic.js';
+import { registerMiscTools } from './tools/misc.js';
+import { registerNavigationTools } from './tools/navigation.js';
+import { registerPropertyTools } from './tools/properties.js';
+import { registerSceneTools } from './tools/scene.js';
+import { registerTimeTools } from './tools/time.js';
 
 const server = new McpServer({
-  name: "openspace-mcp",
-  version: "0.1.0"
+  name: 'openspace-mcp',
+  version: '0.1.0'
 });
 
 registerGenericTools(server);
@@ -27,6 +27,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err: unknown) => {
-  console.error("Fatal error starting openspace-mcp:", err);
+  console.error('Fatal error starting openspace-mcp:', err);
   process.exit(1);
 });

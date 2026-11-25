@@ -1,8 +1,14 @@
-import openspaceApi from "openspace-api-js";
-import type { OpenSpaceApi } from "openspace-api-js/api";
-import type { JsonValue, LuaLibrary, TopicData } from "openspace-api-js/types";
+import { createRequire } from 'node:module';
+import type { OpenSpaceApi } from 'openspace-api-js/api';
+import type { JsonValue, LuaLibrary, TopicData } from 'openspace-api-js/types';
 
-import { config } from "./config.js";
+import { config } from './config.js';
+
+// The ESM build of openspace-api-js uses extensionless relative imports that Node cannot
+// resolve, so the CommonJS build is loaded instead
+const requireCjs = createRequire(import.meta.url);
+const openspaceApi = (requireCjs('openspace-api-js') as typeof import('openspace-api-js'))
+  .default;
 
 export class OpenSpaceConnectionError extends Error {}
 
@@ -35,7 +41,9 @@ async function validateKnownFunctions(): Promise<void> {
     }
 
     const missing = [...knownFunctions].filter((name) => {
-      const bareName = name.startsWith("openspace.") ? name.slice("openspace.".length) : name;
+      const bareName = name.startsWith('openspace.')
+        ? name.slice('openspace.'.length)
+        : name;
       return !available.has(bareName);
     });
 
@@ -43,7 +51,7 @@ async function validateKnownFunctions(): Promise<void> {
       console.error(
         `openspace-mcp: ${missing.length} tool-mapped Lua function(s) were not found in the connected ` +
           "OpenSpace instance's API — the corresponding tool(s) will likely return an empty result " +
-          `instead of erroring (see README "Known limitation"): ${missing.join(", ")}`
+          `instead of erroring (see README "Known limitation"): ${missing.join(', ')}`
       );
     }
   } catch {
@@ -69,12 +77,15 @@ function connect(): Promise<void> {
       reject(
         new OpenSpaceConnectionError(
           `Timed out connecting to OpenSpace at ${config.host}:${config.port}. ` +
-            "Is OpenSpace running with the TCP Server.Interfaces entry enabled in openspace.cfg?"
+            'Is OpenSpace running with the TCP Server.Interfaces entry enabled in openspace.cfg?'
         )
       );
     }, config.connectTimeoutMs);
 
-    instance.onConnect(async () => {
+    // The handler catches its own errors, so the returned promise can be ignored
+    instance.onConnect(() => void handleConnect());
+
+    async function handleConnect(): Promise<void> {
       try {
         await instance.authenticate(config.password);
         api = instance;
@@ -92,7 +103,7 @@ function connect(): Promise<void> {
           reject(err);
         }
       }
-    });
+    }
 
     instance.onDisconnect(() => {
       api = null;
@@ -109,7 +120,7 @@ function connect(): Promise<void> {
 async function ensureConnected(): Promise<OpenSpaceApi> {
   await connect();
   if (!api) {
-    throw new OpenSpaceConnectionError("Lost connection to OpenSpace.");
+    throw new OpenSpaceConnectionError('Lost connection to OpenSpace.');
   }
   return api;
 }
@@ -125,18 +136,22 @@ export function positionalArgs(values: unknown[]): unknown[] {
 
 export async function runScript(
   script: string,
-  opts: { return?: boolean; sync?: boolean } = {}
-): Promise<TopicData<"luascript"> | undefined> {
+  opts: { return?: boolean | undefined; sync?: boolean | undefined } = {}
+): Promise<TopicData<'luascript'> | undefined> {
   const instance = await ensureConnected();
-  const result = await instance.executeLuaScript(script, opts.return ?? true, opts.sync ?? true);
+  const result = await instance.executeLuaScript(
+    script,
+    opts.return ?? true,
+    opts.sync ?? true
+  );
   return result ?? undefined;
 }
 
 export async function callFunction(
   fn: string,
   args: unknown[] = [],
-  opts: { return?: boolean } = {}
-): Promise<TopicData<"luascript"> | undefined> {
+  opts: { return?: boolean | undefined } = {}
+): Promise<TopicData<'luascript'> | undefined> {
   const instance = await ensureConnected();
   if (opts.return === false) {
     await instance.executeLuaFunction(fn, args, false);
@@ -145,7 +160,7 @@ export async function callFunction(
   return instance.executeLuaFunction(fn, args, true);
 }
 
-export async function getProperty(uri: string): Promise<TopicData<"get">> {
+export async function getProperty(uri: string): Promise<TopicData<'get'>> {
   const instance = await ensureConnected();
   return instance.getProperty(uri);
 }
@@ -158,7 +173,7 @@ export async function setProperty(uri: string, value: JsonValue): Promise<void> 
 /** Fetches OpenSpace's live Lua API documentation, cached for the lifetime of the current connection. */
 export async function describeApi(): Promise<LuaLibrary[]> {
   if (!luaDocsCache) {
-    luaDocsCache = ensureConnected().then((instance) => instance.getDocumentation("lua"));
+    luaDocsCache = ensureConnected().then((instance) => instance.getDocumentation('lua'));
     luaDocsCache.catch(() => {
       luaDocsCache = null;
     });

@@ -1,31 +1,34 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
 
-import { callFunction, luaFn, runScript } from "../openspaceClient.js";
-import { toResult } from "./helpers.js";
+import { callFunction, luaFn, runScript } from '../openspaceClient.js';
 
-const SCENE_GRAPH_NODES = luaFn("openspace.sceneGraphNodes");
-const ASSET_ADD = luaFn("openspace.asset.add");
-const ASSET_REMOVE = luaFn("openspace.asset.remove");
-const ABS_PATH = luaFn("openspace.absPath");
-const DIRECTORY_EXISTS = luaFn("openspace.directoryExists");
-const WALK_DIRECTORY_FILES = luaFn("openspace.walkDirectoryFiles");
+import { toResult } from './helpers.js';
+
+const SCENE_GRAPH_NODES = luaFn('openspace.sceneGraphNodes');
+const ASSET_ADD = luaFn('openspace.asset.add');
+const ASSET_REMOVE = luaFn('openspace.asset.remove');
+const ABS_PATH = luaFn('openspace.absPath');
+const DIRECTORY_EXISTS = luaFn('openspace.directoryExists');
+const WALK_DIRECTORY_FILES = luaFn('openspace.walkDirectoryFiles');
 
 /** Path tokens for the two asset roots OpenSpace loads assets from. */
-const ASSET_ROOTS: Record<"data" | "user", string> = {
-  data: "${ASSETS}",
-  user: "${USER_ASSETS}"
+/* eslint-disable no-template-curly-in-string -- OpenSpace path tokens, not templates */
+const ASSET_ROOTS: Record<'data' | 'user', string> = {
+  data: '${ASSETS}',
+  user: '${USER_ASSETS}'
 };
+/* eslint-enable no-template-curly-in-string */
 
 /** Escape a string for safe embedding as a double-quoted Lua string literal. */
 function luaStringLiteral(value: string): string {
   const escaped = value
-    .replace(/\\/g, "\\\\")
+    .replace(/\\/g, '\\\\')
     .replace(/"/g, '\\"')
-    .replace(/\n/g, "\\n")
-    .replace(/\r/g, "\\r")
-    .replace(/\t/g, "\\t")
-    .replace(/\0/g, "\\0");
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t')
+    .replace(/\0/g, '\\0');
   return `"${escaped}"`;
 }
 
@@ -36,11 +39,14 @@ function luaStringLiteral(value: string): string {
  * The filter is embedded as an escaped Lua string literal and only ever used with `string.find(..., true)`
  * (plain-text search), so it can't be used to inject Lua code.
  */
-function buildListAssetsScript(filter: string, roots: Array<"data" | "user">): string {
+function buildListAssetsScript(filter: string, roots: Array<'data' | 'user'>): string {
   const filterLiteral = luaStringLiteral(filter.toLowerCase());
   const collectCalls = roots
-    .map((source) => `collect(${ABS_PATH}(${luaStringLiteral(ASSET_ROOTS[source])}), "${source}")`)
-    .join("\n");
+    .map(
+      (source) =>
+        `collect(${ABS_PATH}(${luaStringLiteral(ASSET_ROOTS[source])}), "${source}")`
+    )
+    .join('\n');
 
   return `
 local filter = ${filterLiteral}
@@ -93,49 +99,53 @@ end
 
 export function registerSceneTools(server: McpServer): void {
   server.registerTool(
-    "list_scene_graph_nodes",
+    'list_scene_graph_nodes',
     {
-      title: "List scene graph nodes",
-      description: "List the identifiers of all scene graph nodes currently loaded in OpenSpace.",
+      title: 'List scene graph nodes',
+      description:
+        'List the identifiers of all scene graph nodes currently loaded in OpenSpace.',
       inputSchema: {}
     },
     () => toResult(() => callFunction(SCENE_GRAPH_NODES, []))
   );
 
   server.registerTool(
-    "asset_add",
+    'asset_add',
     {
-      title: "Load asset",
-      description: "Load (add) an OpenSpace asset by its path/name, e.g. 'scene/solarsystem/planets/mars/mars'.",
+      title: 'Load asset',
+      description:
+        "Load (add) an OpenSpace asset by its path/name, e.g. 'scene/solarsystem/planets/mars/mars'.",
       inputSchema: {
-        path: z.string().describe("Asset path or name to load.")
+        path: z.string().describe('Asset path or name to load.')
       }
     },
     (args) => toResult(() => callFunction(ASSET_ADD, [args.path]))
   );
 
   server.registerTool(
-    "asset_remove",
+    'asset_remove',
     {
-      title: "Unload asset",
-      description: "Unload (remove) a previously loaded OpenSpace asset by its path/name.",
+      title: 'Unload asset',
+      description:
+        'Unload (remove) a previously loaded OpenSpace asset by its path/name.',
       inputSchema: {
-        path: z.string().describe("Asset path or name to unload.")
+        path: z.string().describe('Asset path or name to unload.')
       }
     },
     (args) => toResult(() => callFunction(ASSET_REMOVE, [args.path]))
   );
 
   server.registerTool(
-    "list_assets",
+    'list_assets',
     {
-      title: "List available assets",
+      title: 'List available assets',
       description:
         "List OpenSpace '.asset' files available to load with asset_add, searching the bundled data assets " +
+        // eslint-disable-next-line no-template-curly-in-string -- OpenSpace path tokens
         "folder ('${ASSETS}') and/or the user assets folder ('${USER_ASSETS}'). With no filter, returns a " +
-        "table-of-contents summary: counts of matching assets grouped by source and top-level folder. With " +
-        "a filter, returns the full list of matching assets (an identifier usable with asset_add, the " +
-        "source, and the absolute file path) whose path contains the filter (case-insensitive substring " +
+        'table-of-contents summary: counts of matching assets grouped by source and top-level folder. With ' +
+        'a filter, returns the full list of matching assets (an identifier usable with asset_add, the ' +
+        'source, and the absolute file path) whose path contains the filter (case-insensitive substring ' +
         "match). Use this to discover an asset's exact path before calling asset_add.",
       inputSchema: {
         filter: z
@@ -143,18 +153,24 @@ export function registerSceneTools(server: McpServer): void {
           .optional()
           .describe(
             "Case-insensitive substring to match against asset paths, e.g. 'asteroid' or 'mars'. Omit to " +
-              "get a table-of-contents summary instead of the full list."
+              'get a table-of-contents summary instead of the full list.'
           ),
         source: z
-          .enum(["data", "user", "both"])
+          .enum(['data', 'user', 'both'])
           .optional()
-          .describe("Which asset root(s) to search: bundled 'data', 'user', or 'both' (default).")
+          .describe(
+            "Which asset root(s) to search: bundled 'data', 'user', or 'both' (default)."
+          )
       }
     },
     (args) => {
-      const roots: Array<"data" | "user"> =
-        args.source === "data" ? ["data"] : args.source === "user" ? ["user"] : ["data", "user"];
-      return toResult(() => runScript(buildListAssetsScript(args.filter ?? "", roots)));
+      const roots: Array<'data' | 'user'> =
+        args.source === 'data'
+          ? ['data']
+          : args.source === 'user'
+            ? ['user']
+            : ['data', 'user'];
+      return toResult(() => runScript(buildListAssetsScript(args.filter ?? '', roots)));
     }
   );
 }
